@@ -103,6 +103,7 @@ class ContainerCollectionTest(BaseIntegrationTest):
         assert 'Networks' in attrs['NetworkSettings']
         assert list(attrs['NetworkSettings']['Networks'].keys()) == [net_name]
 
+    @requires_api_version('1.32')
     def test_run_with_networking_config(self):
         net_name = random_name()
         client = docker.from_env(version=TEST_API_VERSION)
@@ -131,13 +132,12 @@ class ContainerCollectionTest(BaseIntegrationTest):
         assert 'NetworkSettings' in attrs
         assert 'Networks' in attrs['NetworkSettings']
         assert list(attrs['NetworkSettings']['Networks'].keys()) == [net_name]
-        # Expect Aliases to list 'test_alias' and the container's short-id.
-        # In API version 1.45, the short-id will be removed.
-        assert attrs['NetworkSettings']['Networks'][net_name]['Aliases'] \
-               == [test_alias, attrs['Id'][:12]]
+        for alias in test_aliases:
+            assert alias in attrs['NetworkSettings']['Networks'][net_name]['Aliases']
         assert attrs['NetworkSettings']['Networks'][net_name]['DriverOpts'] \
                == test_driver_opt
 
+    @requires_api_version('1.32')
     def test_run_with_networking_config_with_undeclared_network(self):
         net_name = random_name()
         client = docker.from_env(version=TEST_API_VERSION)
@@ -166,6 +166,7 @@ class ContainerCollectionTest(BaseIntegrationTest):
             )
             self.tmp_containers.append(container.id)
 
+    @requires_api_version('1.32')
     def test_run_with_networking_config_only_undeclared_network(self):
         net_name = random_name()
         client = docker.from_env(version=TEST_API_VERSION)
@@ -191,11 +192,11 @@ class ContainerCollectionTest(BaseIntegrationTest):
         assert 'NetworkSettings' in attrs
         assert 'Networks' in attrs['NetworkSettings']
         assert list(attrs['NetworkSettings']['Networks'].keys()) == [net_name]
+        assert (attrs['NetworkSettings']['Networks'][net_name]['DriverOpts']
+                is None)
         # Aliases should include the container's short-id (but it will be removed
         # in API v1.45).
         assert attrs['NetworkSettings']['Networks'][net_name]['Aliases'] == [attrs["Id"][:12]]
-        assert (attrs['NetworkSettings']['Networks'][net_name]['DriverOpts']
-                is None)
 
     def test_run_with_none_driver(self):
         client = docker.from_env(version=TEST_API_VERSION)
